@@ -1,11 +1,9 @@
-// @ts-expect-error will be resolve by https://github.com/sveltejs/kit/pull/2285
-import * as App from '../output/server/app.js';
-import {toSvelteKitRequest} from './firebase-to-svelte-kit.js';
+import { App } from "APP";
+import { manifest } from "MANIFEST";
+import { toSvelteKitRequest } from "./firebase-to-svelte-kit.js";
 
 /** @type {import('@sveltejs/kit').App} */
-const app = App;
-
-app.init();
+const app = new App(manifest);
 
 /**
  * Firebase Cloud Function handler for SvelteKit
@@ -20,9 +18,39 @@ app.init();
  * @returns {Promise<void>}
  */
 export default async function svelteKit(request, response) {
-	const rendered = await app.render(toSvelteKitRequest(request));
+  const rendered = await app.render(toSvelteKitRequest(request));
+  const body = await rendered.text();
 
-	return rendered
-		? response.writeHead(rendered.status, rendered.headers).end(rendered.body)
-		: response.writeHead(404, 'Not Found').end();
+  return rendered
+    ? response.writeHead(rendered.status, rendered.headers).end(body)
+    : response.writeHead(404, "Not Found").end();
+}
+
+/**
+ * Splits headers into two categories: single value and multi value
+ * @param {Headers} headers
+ * @returns {{
+ *   headers: Record<string, string>,
+ *   multiValueHeaders: Record<string, string[]>
+ * }}
+ */
+function split_headers(headers) {
+  /** @type {Record<string, string>} */
+  const h = {};
+
+  /** @type {Record<string, string[]>} */
+  const m = {};
+
+  headers.forEach((value, key) => {
+    if (key === "set-cookie") {
+      m[key] = value.split(", ");
+    } else {
+      h[key] = value;
+    }
+  });
+
+  return {
+    headers: h,
+    multiValueHeaders: m,
+  };
 }

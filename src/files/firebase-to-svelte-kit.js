@@ -5,19 +5,21 @@
  * @return {import('@sveltejs/kit').IncomingRequest}
  */
 export function toSvelteKitRequest(request) {
-	const host = `${request.headers['x-forwarded-proto']}://${request.headers.host}`;
-	const {pathname, searchParams: searchParameters} = new URL(request.url || '', host);
+  const host = `${request.headers["x-forwarded-proto"]}://${request.headers.host}`;
+  const {
+    href,
+    pathname,
+    searchParams: searchParameters,
+  } = new URL(request.url || "", host);
 
-	return {
-		method: request.method,
-		headers: toSvelteKitHeaders(request.headers),
-		rawBody: request.rawBody
-			? request.rawBody
-			: null,
-		host,
-		path: pathname,
-		query: searchParameters,
-	};
+  return new Request(href, {
+    method: request.method,
+    headers: toSvelteKitHeaders(request.headers),
+    rawBody: request.rawBody ? request.rawBody : null,
+    host,
+    path: pathname,
+    query: searchParameters,
+  });
 }
 
 /**
@@ -33,15 +35,13 @@ export function toSvelteKitRequest(request) {
  * @returns {Record<string, string>}
  */
 export function toSvelteKitHeaders(headers) {
-	/** @type {Record<string, string>} */
-	const finalHeaders = {};
+  /** @type {Record<string, string>} */
+  const finalHeaders = {};
 
-	// Assume string | string[] types for all values
-	for (const [key, value] of Object.entries(headers)) {
-		finalHeaders[key] = Array.isArray(value)
-			? value.join(',')
-			: value;
-	}
+  // Assume string | string[] types for all values
+  for (const [key, value] of Object.entries(headers)) {
+    finalHeaders[key] = Array.isArray(value) ? value.join(",") : value;
+  }
 
-	return finalHeaders;
+  return finalHeaders;
 }
